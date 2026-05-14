@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Level Devil - Level Select</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Pixelify+Sans:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0010;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: 'Press Start 2P', monospace;
+    }
+
+    .screen {
+      background: #1a0a2e;
+      border: 3px solid #ff4444;
+      border-radius: 4px;
+      padding: 2rem 1.5rem 2.5rem;
+      width: 600px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .scanlines {
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.15) 2px,
+        rgba(0,0,0,0.15) 4px
+      );
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .pixel-corner {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: #ff4444;
+    }
+    .pc-tl { top: 0; left: 0; }
+    .pc-tr { top: 0; right: 0; }
+    .pc-bl { bottom: 0; left: 0; }
+    .pc-br { bottom: 0; right: 0; }
+
+    .title-block { text-align: center; margin-bottom: 2rem; }
+
+    .title-main {
+      font-size: 22px;
+      color: #ff4444;
+      text-shadow: 0 0 10px #ff4444, 3px 3px 0 #8b0000;
+      letter-spacing: 2px;
+      animation: flicker 3s infinite;
+    }
+
+    .title-sub {
+      font-family: 'Pixelify Sans', monospace;
+      font-size: 13px;
+      color: #ff9999;
+      margin-top: 8px;
+      letter-spacing: 3px;
+    }
+
+    @keyframes flicker {
+      0%, 95%, 100% { opacity: 1; }
+      96% { opacity: 0.7; }
+      97% { opacity: 1; }
+      98% { opacity: 0.5; }
+      99% { opacity: 1; }
+    }
+
+    .select-label {
+      font-family: 'Pixelify Sans', monospace;
+      font-size: 12px;
+      color: #aaaaff;
+      text-align: center;
+      margin-bottom: 1.5rem;
+      letter-spacing: 2px;
+    }
+
+    .levels-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    .level-card {
+      background: #0d0020;
+      border: 2px solid #ff4444;
+      border-radius: 4px;
+      padding: 1.2rem 0.8rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.1s, border-color 0.2s;
+      overflow: hidden;
+    }
+
+    .level-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: #ff4444;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .level-card:hover { border-color: #ffaa00; transform: translateY(-3px) scale(1.03); }
+    .level-card:hover::before { opacity: 0.08; }
+    .level-card:active { transform: scale(0.96); }
+
+    .level-card.selected {
+      border-color: #ffaa00;
+      animation: pulse-border 1s infinite;
+    }
+
+    @keyframes pulse-border {
+      0%, 100% { box-shadow: 0 0 8px #ffaa00; }
+      50% { box-shadow: 0 0 20px #ffaa00, 0 0 40px #ff6600; }
+    }
+
+    .level-icon {
+      font-size: 28px;
+      margin-bottom: 10px;
+      display: block;
+      animation: bounce-icon 2s infinite;
+    }
+
+    .level-card:nth-child(2) .level-icon { animation-delay: 0.3s; }
+    .level-card:nth-child(3) .level-icon { animation-delay: 0.6s; }
+
+    @keyframes bounce-icon {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+
+    .level-num { font-size: 10px; color: #888; margin-bottom: 4px; letter-spacing: 1px; }
+
+    .level-name {
+      font-size: 11px;
+      color: #ff6666;
+      text-shadow: 1px 1px 0 #8b0000;
+      line-height: 1.6;
+    }
+
+    .level-card.selected .level-name { color: #ffcc00; }
+    .level-card.selected .level-icon { filter: drop-shadow(0 0 6px #ffcc00); }
+
+    .difficulty-bar {
+      display: flex;
+      justify-content: center;
+      gap: 3px;
+      margin-top: 10px;
+    }
+
+    .diff-pip {
+      width: 8px;
+      height: 8px;
+      border-radius: 1px;
+      background: #333;
+      border: 1px solid #555;
+    }
+
+    .diff-pip.lit       { background: #ff4444; border-color: #ff6666; box-shadow: 0 0 4px #ff4444; }
+    .diff-pip.lit.yellow{ background: #ffaa00; border-color: #ffcc00; box-shadow: 0 0 4px #ffaa00; }
+    .diff-pip.lit.red   { background: #ff0000; border-color: #ff4444; box-shadow: 0 0 4px #ff0000; }
+
+    .selected-info {
+      text-align: center;
+      font-family: 'Pixelify Sans', monospace;
+      font-size: 11px;
+      color: #ffaa00;
+      margin-top: 1rem;
+      min-height: 16px;
+      letter-spacing: 1px;
+    }
+
+    .death-counter {
+      text-align: center;
+      font-family: 'Pixelify Sans', monospace;
+      font-size: 11px;
+      color: #666;
+      margin-top: 6px;
+      letter-spacing: 1px;
+      transition: color 0.3s;
+    }
+
+    .death-counter.visible { color: #ff6666; }
+
+    .play-btn {
+      display: block;
+      margin: 1.5rem auto 0;
+      background: #ff4444;
+      color: #fff;
+      border: none;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 11px;
+      padding: 14px 32px;
+      cursor: pointer;
+      border-radius: 2px;
+      text-shadow: 1px 1px 0 #8b0000;
+      box-shadow: 0 4px 0 #8b0000;
+      transition: transform 0.1s, box-shadow 0.1s;
+      letter-spacing: 1px;
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .play-btn.active {
+      opacity: 1;
+      pointer-events: all;
+      animation: glow-btn 2s infinite;
+    }
+
+    @keyframes glow-btn {
+      0%, 100% { box-shadow: 0 4px 0 #8b0000, 0 0 20px rgba(255,68,68,0.3); }
+      50%       { box-shadow: 0 4px 0 #8b0000, 0 0 30px rgba(255,68,68,0.7); }
+    }
+
+    .play-btn.active:hover  { transform: translateY(-2px); }
+    .play-btn.active:active { transform: translateY(2px); box-shadow: 0 2px 0 #8b0000; }
+  </style>
+</head>
+<body>
+
+  <div class="screen">
+    <div class="scanlines"></div>
+    <div class="pixel-corner pc-tl"></div>
+    <div class="pixel-corner pc-tr"></div>
+    <div class="pixel-corner pc-bl"></div>
+    <div class="pixel-corner pc-br"></div>
+
+    <div class="title-block">
+      <div class="title-main">LEVEL DEVIL</div>
+      <div class="title-sub">— SELECT YOUR DOOM —</div>
+    </div>
+
+    <div class="select-label">▶ CHOOSE A LEVEL ◀</div>
+
+    <div class="levels-grid" id="levelsGrid">
+
+      <div class="level-card" data-level="6" data-deaths="213" data-tip="الأرض بتختفي!">
+        <span class="level-icon">👿</span>
+        <div class="level-num">LEVEL</div>
+        <div class="level-name">06</div>
+        <div class="difficulty-bar">
+          <div class="diff-pip lit"></div>
+          <div class="diff-pip lit"></div>
+          <div class="diff-pip lit"></div>
+          <div class="diff-pip"></div>
+          <div class="diff-pip"></div>
+        </div>
+      </div>
+
+      <div class="level-card" data-level="11" data-deaths="589" data-tip="الجدران بتتحرك!">
+        <span class="level-icon">💀</span>
+        <div class="level-num">LEVEL</div>
+        <div class="level-name">11</div>
+        <div class="difficulty-bar">
+          <div class="diff-pip lit yellow"></div>
+          <div class="diff-pip lit yellow"></div>
+          <div class="diff-pip lit yellow"></div>
+          <div class="diff-pip lit yellow"></div>
+          <div class="diff-pip"></div>
+        </div>
+      </div>
+
+      <div class="level-card" data-level="27" data-deaths="1337" data-tip="مفيش رحمة هنا!">
+        <span class="level-icon">🔥</span>
+        <div class="level-num">LEVEL</div>
+        <div class="level-name">27</div>
+        <div class="difficulty-bar">
+          <div class="diff-pip lit red"></div>
+          <div class="diff-pip lit red"></div>
+          <div class="diff-pip lit red"></div>
+          <div class="diff-pip lit red"></div>
+          <div class="diff-pip lit red"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="selected-info" id="selectedInfo"></div>
+    <div class="death-counter" id="deathCounter">اختار مستوى علشان تشوف عدد الموتات 💀</div>
+
+    <button class="play-btn" id="playBtn">► PLAY NOW</button>
+  </div>
+
+  <script>
+    // ---- State ----
+    let selectedLevel = null;
+
+    // ---- Elements ----
+    const cards       = document.querySelectorAll('.level-card');
+    const selectedInfo = document.getElementById('selectedInfo');
+    const deathCounter = document.getElementById('deathCounter');
+    const playBtn      = document.getElementById('playBtn');
+
+    // ---- Event Listeners ----
+    cards.forEach(function(card) {
+      card.addEventListener('click', function() {
+        selectLevel(card);
+      });
+    });
+
+    playBtn.addEventListener('click', function() {
+      startLevel();
+    });
+
+    // ---- Functions ----
+    function selectLevel(card) {
+      // Remove selection from all cards
+      cards.forEach(function(c) {
+        c.classList.remove('selected');
+      });
+
+      // Select clicked card
+      card.classList.add('selected');
+      selectedLevel = card.dataset.level;
+
+      var deaths = card.dataset.deaths;
+      var tip    = card.dataset.tip;
+
+      // Update info text
+      selectedInfo.textContent = '⚠ ' + tip;
+
+      // Update death counter
+      deathCounter.textContent = '💀 متوسط الموتات: ' + Number(deaths).toLocaleString() + ' مرة';
+      deathCounter.classList.add('visible');
+
+      // Activate play button
+      playBtn.classList.add('active');
+      playBtn.textContent = '► LEVEL ' + selectedLevel;
+    }
+
+    function startLevel() {
+      if (!selectedLevel) return;
+
+
+      // هنا تقدر تضيف الكود بتاعك علشان تروح للـ level المختار
+      // مثلاً:
+     window.location.href = 'level_' + selectedLevel + '.html';
+      // أو:
+      // loadLevel(selectedLevel);
+    }
+  </script>
+
+</body>
+</html>
